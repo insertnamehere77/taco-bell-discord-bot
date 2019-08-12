@@ -7,9 +7,11 @@ class DiscordBot():
 	_URL = 'https://discordapp.com/api/'
 
 	"""docstring for DiscordBot"""
-	def __init__(self, id, token):
+	def __init__(self, id, token, responses = None, reactions = None):
 		self.user_id = id
 		self.token = token
+		self.responses = responses
+		self.reactions = reactions
 
 		self.socket = None
 		self._heartbeat_task = None
@@ -45,15 +47,12 @@ class DiscordBot():
 		response = requests.put(reaction_url, headers = headers)
 
 
-
 	# Connects to the socket and acts on events
 	async def listen(self):
 
 		await self._connect()
 		
 		self._heartbeat_task = asyncio.create_task(self._heartbeat())
-
-
 
 		while True:
 			event_str = await self.socket.recv()
@@ -152,21 +151,18 @@ class DiscordBot():
 	def _msg_created(self, payload):
 
 		if self._mentioned(payload['mentions']):
-			channel_id = payload['channel_id']
 
+			channel_id = payload['channel_id']
 			author_id = payload['author']['id']
 
-			msg = 'Think outside the bun <@{}>'.format(author_id)
+			# <@{}>
 
+			msg = random.choice(self.responses)
 			self.send_msg(channel_id, msg, True)
 
 			msg_id = payload['id']
-			reactions = ["🥙", "🌶️", "🇲🇽", "🌯", "🌮"]
-			reaction = random.choice(reactions)
-			print(reaction)
+			reaction = random.choice(self.reactions)
 			self.add_reaction(channel_id, msg_id, reaction)
-			return
-
 
 
 
@@ -186,7 +182,14 @@ async def main():
 	
 	token = config['discord']['token']
 	user_id = config['discord']['user_id']
-	bot = DiscordBot(user_id, token)
+
+	responses = config['discord']['responses']
+	responses = responses.split(',')
+
+	reactions = config['discord']['reactions']
+	reactions = reactions.split(',')
+
+	bot = DiscordBot(user_id, token, responses, reactions)
 
 	await bot.listen()
 
