@@ -1,20 +1,19 @@
-import time, asyncio, json, ssl, random, configparser
+import time, asyncio, json, ssl, re
 import requests, websockets
 
 
-class DiscordBot():
+class BaseDiscordBot():
 
 	_URL = 'https://discordapp.com/api/'
 
 	"""docstring for DiscordBot"""
-	def __init__(self, id, token, responses = None, reactions = None):
+	def __init__(self, id, token):
 		self.user_id = id
 		self.token = token
-		self.responses = responses
-		self.reactions = reactions
 
 		self.socket = None
 		self._heartbeat_task = None
+
 
 
 	def __del__(self):
@@ -34,7 +33,7 @@ class DiscordBot():
 		}
 
 		headers = self._headers()
-		msg_url = '{}channels/{}/messages'.format(DiscordBot._URL, channel_id)
+		msg_url = f'{self._URL}channels/{channel_id}/messages'
 		response = requests.post(msg_url, data = payload, headers = headers)
 
 		return response.json()
@@ -43,7 +42,7 @@ class DiscordBot():
 	# PUT a reaction on the specified message
 	def add_reaction(self, channel_id, msg_id, reaction):
 		headers = self._headers()
-		reaction_url = '{}channels/{}/messages/{}/reactions/{}/@me'.format(DiscordBot._URL, channel_id, msg_id, reaction)
+		reaction_url = f'{self._URL}channels/{channel_id}/messages/{msg_id}/reactions/{reaction}/@me'
 		response = requests.put(reaction_url, headers = headers)
 
 
@@ -57,8 +56,6 @@ class DiscordBot():
 		while True:
 			event_str = await self.socket.recv()
 			event = json.loads(event_str)
-			print("NEW MSG", event)
-			print("\n")
 
 			if event['t'] == 'MESSAGE_CREATE':
 				self._msg_created(event['d'])
@@ -90,7 +87,6 @@ class DiscordBot():
 		while True:
 			heartbeat = self._wrap_payload(2, 251)
 			self.socket.send(heartbeat)
-			print("Sent heartbeat\n")
 			await asyncio.sleep(30)
 
 
@@ -147,60 +143,29 @@ class DiscordBot():
 		return False
 
 
+	# Removes mentions from the given msg
+	def _strip_mention(self, msg):
+		content = re.sub(r'<@[0-9]*>', '', msg).strip()
+		return content
+
+
+	# Formats a mention
+	def _format_mention(self, id):
+		mention = f'<@{id}>'
+		return mention
+
+
 	# The function that handles a MESSAGE_CREATED event
 	def _msg_created(self, payload):
-
-		if self._mentioned(payload['mentions']):
-
-			channel_id = payload['channel_id']
-			author_id = payload['author']['id']
-
-			# <@{}>
-
-			msg = random.choice(self.responses)
-			self.send_msg(channel_id, msg, True)
-
-			msg_id = payload['id']
-			reaction = random.choice(self.reactions)
-			self.add_reaction(channel_id, msg_id, reaction)
-
-
-
-
-
-
-
-		
+		pass
 
 		
 
 
-async def main():
-
-	config = configparser.ConfigParser()
-	config.read('bot_config.cfg')
-	
-	token = config['discord']['token']
-	user_id = config['discord']['user_id']
-
-	responses = config['discord']['responses']
-	responses = responses.split(',')
-
-	reactions = config['discord']['reactions']
-	reactions = reactions.split(',')
-
-	bot = DiscordBot(user_id, token, responses, reactions)
-
-	await bot.listen()
-
-
-
-	
 
 
 
 
 
-if __name__ == '__main__':
-	asyncio.run(main())
+
 
