@@ -13,6 +13,8 @@ class BaseDiscordBot():
 
 		self.socket = None
 		self._heartbeat_task = None
+		# Stored in seconds for the asyncio sleep() method
+		self._heartbeat_interval = 30
 
 
 
@@ -57,6 +59,10 @@ class BaseDiscordBot():
 			event_str = await self.socket.recv()
 			event = json.loads(event_str)
 
+			# Hello payload that provides heartbeat_interval
+			if event['op'] == 10:
+				self._heartbeat_interval = event['d']['heartbeat_interval'] / 1000
+
 			if event['t'] == 'MESSAGE_CREATE':
 				self._msg_created(event['d'])
 
@@ -80,14 +86,14 @@ class BaseDiscordBot():
 		await self._identify()
 
 
-	# Function to send the websocket a heartbeat every 30 seconds
+	# Function to send the websocket a heartbeat every heartbeat inverval
 	# Should be ran as an async task
 	async def _heartbeat(self):
 		
 		while True:
-			heartbeat = self._wrap_payload(2, 251)
-			self.socket.send(heartbeat)
-			await asyncio.sleep(30)
+			heartbeat = self._wrap_payload(1, 251)
+			await self.socket.send(heartbeat)
+			await asyncio.sleep(self._heartbeat_interval)
 
 
 
