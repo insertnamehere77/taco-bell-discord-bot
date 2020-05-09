@@ -18,4 +18,11 @@ async def main(argv):
 
 
 if __name__ == '__main__':
-	asyncio.run(main(sys.argv))
+	try:
+		asyncio.run(main(sys.argv))
+	except KeyboardInterrupt:
+		print('Goodbye!')
+	except Exception as e:
+		print('Loop encountered a fatal error')
+		raise e
+	

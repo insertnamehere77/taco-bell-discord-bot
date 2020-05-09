@@ -20,7 +20,7 @@ class BaseDiscordBot():
 
 	def __del__(self):
 		if self.socket:
-			self.socket.close()
+			asyncio.ensure_future(self.socket.close())
 
 		if self._heartbeat_task:
 			self._heartbeat_task.cancel()
@@ -89,11 +89,19 @@ class BaseDiscordBot():
 	# Function to send the websocket a heartbeat every heartbeat inverval
 	# Should be ran as an async task
 	async def _heartbeat(self):
+		try:
+
+			while True:
+				heartbeat = self._wrap_payload(1, 251)
+				await self.socket.send(heartbeat)
+				await asyncio.sleep(self._heartbeat_interval)
+
+		except asyncio.CancelledError:
+			print('Heartbeat task cancelled')
+		except Exception as e:
+			print('Heartbeat task encountered an error')
+			raise e
 		
-		while True:
-			heartbeat = self._wrap_payload(1, 251)
-			await self.socket.send(heartbeat)
-			await asyncio.sleep(self._heartbeat_interval)
 
 
 
