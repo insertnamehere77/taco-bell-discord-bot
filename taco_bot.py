@@ -1,6 +1,6 @@
 import discord_bot, taco_scraper
 
-import random, configparser, os
+import random
 
 
 class TacoBellBot(discord_bot.BaseDiscordBot):
@@ -61,20 +61,7 @@ class TacoBellBot(discord_bot.BaseDiscordBot):
 
 
 
-# Creates a bot using the given cfg file
 def create_bot_from_cfg(cfg_path):
+	return discord_bot.create_bot_from_cfg(cfg_path, TacoBellBot)
 
-	if 'discord_token' in os.environ:
-		token = os.environ['discord_token']
-		user_id = os.environ['discord_user_id']
-		
-	else:
-		config = configparser.ConfigParser()
-		config.read(cfg_path)
-		
-		token = config['discord']['token']
-		user_id = config['discord']['user_id']
 
-	bot = TacoBellBot(user_id, token)
-
-	return bot

@@ -1,4 +1,4 @@
-import time, asyncio, json, ssl, re
+import time, asyncio, json, ssl, re, os, configparser
 import requests, websockets
 
 
@@ -145,7 +145,7 @@ class BaseDiscordBot():
 
 	# Removes mentions from the given msg
 	def _strip_mention(self, msg):
-		content = re.sub(r'<@[0-9]*>', '', msg).strip()
+		content = re.sub(r'<@![0-9]*>', '', msg).strip()
 		return content
 
 
@@ -161,6 +161,23 @@ class BaseDiscordBot():
 
 		
 
+# Creates a bot using the given cfg file and Bot Class
+def create_bot_from_cfg(cfg_path, BotClass):
+
+	if 'discord_token' in os.environ:
+		token = os.environ['discord_token']
+		user_id = os.environ['discord_user_id']
+		
+	else:
+		config = configparser.ConfigParser()
+		config.read(cfg_path)
+		
+		token = config['discord']['token']
+		user_id = config['discord']['user_id']
+
+	bot = BotClass(user_id, token)
+
+	return bot
 
 
 
