@@ -179,10 +179,12 @@ class BaseDiscordBot():
 def create_bot_from_cfg(cfg_path, BotClass):
 
 	if 'discord_token' in os.environ:
+		print('Reading config from env variables')
 		token = os.environ['discord_token']
 		user_id = os.environ['discord_user_id']
 		
 	else:
+		print(f'Reading config from {cfg_path}')
 		config = configparser.ConfigParser()
 		config.read(cfg_path)
 		

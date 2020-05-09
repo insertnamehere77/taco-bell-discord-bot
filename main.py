@@ -11,8 +11,6 @@ async def main(argv):
 	else:
 		cfg_path = 'bot_config.cfg'
 
-	print(f'Reading config from {cfg_path}')
-
 	bot = taco_bot.create_bot_from_cfg(cfg_path)
 	await bot.listen()
 
