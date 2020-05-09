@@ -10,6 +10,10 @@ CheesyGorditoCrunch can be used in any Discord server where it's been added. Sim
 
 `@CheesyGorditoCrunch combos`
 
+You can also have the bot read the search results back to you using text to speech by including the keyword "speak" in your message. For example:
+
+`@CheesyGorditoCrunch cheese speak`
+
 
 ## How to Run 
 
