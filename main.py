@@ -1,33 +1,30 @@
-import taco_bot
+import configparser, random, sys
+import discord
+import msg_util, taco_scraper
 
-import asyncio, sys
 
+def main(cfg_path: str):
+    client = discord.Client(intents=discord.Intents.default())
+    scrapper = taco_scraper.TacoBellScraper()
+    reactions = ["🌶️", "🫓", "🌯", "🌮", "🥑", "🍅", "🧀"]
 
-async def main(argv):
-    if len(argv) == 2:
-        cfg_path = argv[1]
-    else:
-        cfg_path = "bot_config.cfg"
+    @client.event
+    async def on_message(message: discord.Message):
+        if client.user in message.mentions:
+            search_term = msg_util.strip_mentions(message.content)
+            results = scrapper.search_menu(search_term)
+            await message.reply(msg_util.format_reply(results))
+            await message.add_reaction(random.choice(reactions))
 
-    try:
-        bot = taco_bot.create_bot_from_cfg(cfg_path)
-        await bot.start_session()
-        await bot.listen()
-    except KeyboardInterrupt:
-        print("Goodbye!")
-    except Exception as e:
-        print("Listen encountered a fatal error")
-        print(e)
-        raise e
-    finally:
-        await bot.end_session()
+    config = configparser.ConfigParser()
+    config.read(cfg_path)
+    token = config["discord"]["token"]
+
+    client.run(token)
 
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main(sys.argv))
-    except KeyboardInterrupt:
-        print("Goodbye!")
-    except Exception as e:
-        print("Loop encountered a fatal error")
-        raise e
+    if len(sys.argv) >= 2:
+        main(sys.argv[1])
+    else:
+        print("USAGE: python main.py <PATH_TO_CFG_FILE>")
