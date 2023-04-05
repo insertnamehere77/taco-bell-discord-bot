@@ -1,9 +1,9 @@
-import time, asyncio, json, ssl, re, os, configparser
-import requests, websockets
+import asyncio, json, ssl, re, os, configparser
+import websockets
+from http_client import DiscordHttpClient
 
 
 class BaseDiscordBot:
-    _URL = "https://discordapp.com/api/"
 
     """docstring for DiscordBot"""
 
@@ -17,25 +17,17 @@ class BaseDiscordBot:
         self._heartbeat_interval = 30
         self._session_active = False
 
+        self._http_client = DiscordHttpClient(token)
+
     def __del__(self):
         if self._session_active:
             print("You forgot to end the discord session")
 
-    # POST a message for the users to see
-    def send_msg(self, channel_id, msg, tts=False):
-        payload = {"content": msg, "tts": tts}
+    def post_message(self, channel_id, msg, tts):
+        return self._http_client.post_message(channel_id, msg, tts)
 
-        headers = self._headers()
-        msg_url = f"{self._URL}channels/{channel_id}/messages"
-        response = requests.post(msg_url, data=payload, headers=headers)
-
-        return response.json()
-
-    # PUT a reaction on the specified message
-    def add_reaction(self, channel_id, msg_id, reaction):
-        headers = self._headers()
-        reaction_url = f"{self._URL}channels/{channel_id}/messages/{msg_id}/reactions/{reaction}/@me"
-        response = requests.put(reaction_url, headers=headers)
+    def put_reaction(self, channel_id, msg_id, reaction):
+        return self._http_client.put_reaction(channel_id, msg_id, reaction)
 
     async def _start_heartbeat(self):
         event_str = await self.socket.recv()
@@ -82,7 +74,7 @@ class BaseDiscordBot:
 
     # Connects to the websocket and identifies itself
     async def _connect(self):
-        gateway = self._get_gateway()
+        gateway = self._http_client.get_gateway()
         url = gateway["url"]
 
         # Not secure, but for a silly memebot it's probably not important
@@ -109,11 +101,6 @@ class BaseDiscordBot:
             print("Heartbeat task encountered an error")
             raise e
 
-    # Creates the header for any HTTP calls
-    def _headers(self):
-        headers = {"Authorization": "Bot " + self.token}
-        return headers
-
     # Sends the socket our identity payload so it knows who TF we are
     async def _identify(self):
         payload = {
@@ -133,15 +120,6 @@ class BaseDiscordBot:
         msg = {"op": opcode, "d": payload}
 
         return json.dumps(msg)
-
-    # GET the gateway URL so we can connect
-    def _get_gateway(self):
-        headers = self._headers()
-
-        response = requests.get(
-            "https://discordapp.com/api/gateway/bot", headers=headers
-        )
-        return response.json()
 
     # Scans the mentions to see if our bot got called
     def _mentioned(self, mentions):
