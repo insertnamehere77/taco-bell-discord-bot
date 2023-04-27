@@ -1,5 +1,5 @@
 import dataclasses
-import requests, bs4
+import bs4, aiohttp
 
 
 @dataclasses.dataclass
@@ -14,21 +14,28 @@ class MenuItem:
 
 class TacoBellScraper:
     _SEARCH_URL = "https://www.tacobell.com/search"
+    _session: aiohttp.ClientSession
 
-    def _get_menu_soup(self, url: str, params: dict = {}) -> bs4.BeautifulSoup:
+    def __init__(self) -> None:
+        self._session = aiohttp.ClientSession()
+
+    async def close(self):
+        await self._session.close()
+
+    async def _get_menu_soup(self, url: str, params: dict = {}) -> bs4.BeautifulSoup:
         headers = {
             "User-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.80 Safari/537.36"
         }
-        response = requests.get(url, headers=headers, params=params)
-        soup = bs4.BeautifulSoup(response.text, "html.parser")
+        response = await self._session.get(url, headers=headers, params=params)
+        soup = bs4.BeautifulSoup(await response.text(), "html.parser")
         return soup
 
     # Uses the site's search to return results
-    def search_menu(self, term: str) -> list[MenuItem]:
+    async def search_menu(self, term: str) -> list[MenuItem]:
         params = {
             "text": term,
         }
-        soup = self._get_menu_soup(self._SEARCH_URL, params)
+        soup = await self._get_menu_soup(self._SEARCH_URL, params)
         menu = self._extract_menu(soup)
         return menu
 
